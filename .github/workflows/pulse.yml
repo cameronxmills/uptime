@@ -1,0 +1,22 @@
+name: pulse
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ping monolith pulse
+        run: curl -sS -m 30 "https://monolith-os-hq.vercel.app/api/pulse" || true
+      - uses: actions/checkout@v4
+      - name: monthly keepalive commit (GitHub disables idle crons after 60d)
+        run: |
+          if [ "$(date -u +%d)" = "01" ] && [ "$(date -u +%H)" = "00" ]; then
+            date -u > .last-keepalive
+            git config user.name pulse
+            git config user.email pulse@users.noreply.github.com
+            git add .last-keepalive && git commit -m keepalive && git push || true
+          fi
